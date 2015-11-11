@@ -3,6 +3,7 @@
 import sys
 import re
 import json
+from math import sin, cos, pi, atan2, sqrt
 
 class GeoLang:
 
@@ -12,20 +13,51 @@ class GeoLang:
     def is_supported(g_type):
         return g_type in GeoLang.supported
 
+class Utils:
+
+    '''
+    convert from degrees to randians
+    '''
+    @staticmethod
+    def to_radians(deg):
+        return deg * pi / 180
+
+    '''
+    Haversine distance formula
+    '''
+    @staticmethod
+    def distance(p1, p2):
+        R = 6371000
+        lon1 = Utils.to_radians(p1.get_lon())
+        lat1 = Utils.to_radians(p1.get_lat())
+        lon2 = Utils.to_radians(p2.get_lon())
+        lat2 = Utils.to_radians(p2.get_lat())
+        d_lat = abs(lat1 - lat2)
+        d_lon = abs(lon1 - lon2)
+        a = sin(d_lat) ** 2 + \
+            cos(lat1) * cos(lat2) * \
+            sin(d_lon / 2) ** 2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        d = R * c
+        return d / 1000
+
 class Point:
     def __init__(self, lon, lat):
         self.lon = lon
         self.lat = lat
         self.geoj = { 'type': 'Point', 'coordinates': [self.lon, self.lat] }
 
-    def resolve(self, point):
-        pass
+    def get_lon(self):
+        return self.lon
+
+    def get_lat(self):
+        return self.lat
 
     def to_geojson(self):
         return self.geoj
 
     def distance_to(self, point):
-        pass
+        return Utils.distance(self, point)
 
     def __add__(self, point):
         lon = self.lon + point.lon
