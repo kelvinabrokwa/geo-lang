@@ -1,1 +1,2 @@
-rect (1,1) (2,2)
+point (0,0);
+linestring (0,0) (1,1);

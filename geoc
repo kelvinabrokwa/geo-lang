@@ -4,20 +4,25 @@ import sys
 import re
 import json
 
-src = open(sys.argv[1], 'r').read()
+class GeoLang:
 
-tokens = src.split()
+    supported = [ 'point', 'linestring' ]
+
+    @staticmethod
+    def is_supported(g_type):
+        return g_type in GeoLang.supported
 
 class Point:
     def __init__(self, lon, lat):
         self.lon = lon
         self.lat = lat
+        self.geoj = { 'type': 'Point', 'coordinates': [self.lon, self.lat] }
 
     def resolve(self, point):
         pass
 
     def to_geojson(self):
-        pass
+        return self.geoj
 
     def distance_to(self, point):
         pass
@@ -40,11 +45,24 @@ class Parser:
         p = re.sub('[\(\)]', '', p_str).split(',')
         return Point(p[0], p[1])
 
-if tokens[0] == 'rect':
-    p1 = Parser.parse_point(tokens[1])
-    p2 = Parser.parse_point(tokens[2])
-    r = Rect([p1, p2])
-    feature = {}
-    feature['type'] = 'Polygon'
+    def parse_linestring():
+        pass
 
-    print(json.dumps(feature))
+class UnsupportedGeometry(Exception):
+    def __init__(self, g_type):
+        self.g_type = g_type
+    def __str__(self):
+        return 'Error: Unsupported geometry type: ' + self.g_type
+
+# read the source file
+src = open(sys.argv[1], 'r').read()
+
+# remove new line characters
+commands = filter(lambda c: c != '\n', src.split(';'))
+commands = map(lambda c: c.replace('\n', ''), commands)
+
+for command in commands:
+    tokens = command.split()
+    g_type = tokens[0]
+    if not GeoLang.is_supported(g_type):
+        raise UnsupportedGeometry(g_type)
