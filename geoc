@@ -8,15 +8,23 @@ from math import sin, cos, pi, atan2, sqrt
 class GeoLang:
 
     supported = [ 'point', 'linestring' ]
+    types = [ 'point', 'linestring' ]
 
     @staticmethod
     def is_supported(g_type):
         return g_type in GeoLang.supported
 
-class Utils:
+    @staticmethod
+    def is_type(t):
+        return t in GeoLang.types
 
+    @staticmethod
+    def is_output(command):
+        return command[:2] == '<-'
+
+class Utils:
     '''
-    convert from degrees to randians
+    convert from degrees to radians
     '''
     @staticmethod
     def to_radians(deg):
@@ -28,10 +36,12 @@ class Utils:
     @staticmethod
     def distance(p1, p2):
         R = 6371000
-        lon1 = Utils.to_radians(p1.get_lon())
-        lat1 = Utils.to_radians(p1.get_lat())
-        lon2 = Utils.to_radians(p2.get_lon())
-        lat2 = Utils.to_radians(p2.get_lat())
+        p1_coords = p1.get_lon_lat();
+        p2_coords = p2.get_lon_lat();
+        lon1 = Utils.to_radians(p1_coords[0])
+        lat1 = Utils.to_radians(p1_coords[1])
+        lon2 = Utils.to_radians(p2_coords[0])
+        lat2 = Utils.to_radians(p2_coords[1])
         d_lat = abs(lat1 - lat2)
         d_lon = abs(lon1 - lon2)
         a = sin(d_lat) ** 2 + \
@@ -41,17 +51,19 @@ class Utils:
         d = R * c
         return d / 1000
 
+class FeatureCollection:
+    def __init__(self):
+        pass
+
+'''
+Point geometry class
+'''
 class Point:
-    def __init__(self, lon, lat):
-        self.lon = lon
-        self.lat = lat
-        self.geoj = { 'type': 'Point', 'coordinates': [self.lon, self.lat] }
+    def __init__(self, tokens):
+        pass
 
-    def get_lon(self):
-        return self.lon
-
-    def get_lat(self):
-        return self.lat
+    def get_lon_lat(self):
+        return [ self.lon, self.lat ]
 
     def to_geojson(self):
         return self.geoj
@@ -64,37 +76,69 @@ class Point:
         lat = self.lat + point.lat
         return Point(lon, lat)
 
+    @staticmethod
+    def parse_point(string):
+        return Point([])
+
     def __str__(self):
         return '(' + self.lon + ',' + self.lat + ')'
 
+'''
+LineString geometry class
+'''
+class LineString:
+    def __init__(self, tokens):
+        pass
+
+'''
+Rect geometry class
+'''
 class Rect:
     def __init__(self, points):
         self.points = points
 
+'''
+Parser utilities
+'''
 class Parser:
     @staticmethod
+    def tokenize(cmd):
+        cmd = cmd.split()
+        return { 'command': cmd[0], 'args': cmd[1:] }
+
+    @staticmethod
     def parse_point(p_str):
+        p_str = p_str.replace(' ', '')
         p = re.sub('[\(\)]', '', p_str).split(',')
         return Point(p[0], p[1])
 
-    def parse_linestring():
-        pass
+    @staticmethod
+    def parse_linestring(l_str):
+        return None
 
+    @staticmethod
+    def split_commands(src):
+        src = src.replace('\n', '')
+        src = filter(lambda c: c[:2] != '//', src.split(';'))
+        src = filter(lambda c: c != '', src)
+        return list(src)
+
+'''
+Unsupported geometry error class
+'''
 class UnsupportedGeometry(Exception):
     def __init__(self, g_type):
         self.g_type = g_type
     def __str__(self):
         return 'Error: Unsupported geometry type: ' + self.g_type
 
-# read the source file
-src = open(sys.argv[1], 'r').read()
+if __name__ == '__main__':
+    # read the source file
+    src = open(sys.argv[1], 'r').read()
 
-# remove new line characters
-commands = filter(lambda c: c != '\n', src.split(';'))
-commands = map(lambda c: c.replace('\n', ''), commands)
-
-for command in commands:
-    tokens = command.split()
-    g_type = tokens[0]
-    if not GeoLang.is_supported(g_type):
-        raise UnsupportedGeometry(g_type)
+    src = Parser.split_commands(src);
+    for cmd in src:
+        if GeoLang.is_type(cmd.split(' ')[0]):
+            print('declaration:', cmd)
+        elif GeoLang.is_output(cmd):
+            print('output: ', cmd)
